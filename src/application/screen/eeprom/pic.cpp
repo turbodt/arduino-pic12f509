@@ -11,6 +11,8 @@ namespace screen {
     input::lcd->setCursor(2,1);
     input::lcd->print("to eeprom...");
 
+    at24c32::SequentialWrite * writter = new at24c32::SequentialWrite(input::eeprom);
+    writter->init(slot_addr);
     pic12f509::word_t pair_instructions[2];
     input::pic->init();
     input::pic->send_command(pic12f509::CMD_INCREMENT_ADDRESS);
@@ -18,18 +20,18 @@ namespace screen {
       input::pic->send_command(pic12f509::CMD_READ_DATA);
       pair_instructions[i%2]= input::pic->get_word();
       if (i%2) {
-        uint16_t j = slot_addr + 3*((i-1)/2);
-        input::eeprom->send_word(j, (pair_instructions[0] >> 4) & 0x0ff);
-        input::eeprom->send_word(
-          j + 1,
+        writter->send_next_word((pair_instructions[0] >> 4) & 0x0ff);
+        writter->send_next_word(
           ((pair_instructions[0] << 4) & 0x0f0)
           | ((pair_instructions[1] >> 8) & 0x00f)
         );
-        input::eeprom->send_word(j + 2, pair_instructions[1] & 0x0ff);
+        writter->send_next_word(pair_instructions[1] & 0x0ff);
       }
       input::pic->send_command(pic12f509::CMD_INCREMENT_ADDRESS);
     }
     input::pic->end();
+    writter->end();
+    delete writter;
 
     input::lcd->clear();
     input::lcd->setCursor(6,0);
@@ -99,9 +101,11 @@ namespace screen {
       switch (selected_option) {
         case 0:
           pic::pic_to_eeprom(slot_index);
+          exit_loop = true;
           break;
         case 1:
           pic::eeprom_to_pic(slot_index);
+          exit_loop = true;
           break;
         case 2:
           exit_loop = true;

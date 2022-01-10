@@ -6,7 +6,9 @@
 #include <application/screen/eeprom/shared.hpp>
 #include <interaction_utils.hpp>
 #include <at24c32.interface.hpp>
+#include <at24c32.operations.hpp>
 #include <pic12f509.interface.hpp>
+#include <serial-comm.hpp>
 
 using namespace application;
 

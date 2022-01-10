@@ -12,9 +12,14 @@ namespace screen {
     input::lcd->print("Deleting");
     input::lcd->setCursor(3,1);
     input::lcd->print("content...");
-    for(uint16_t i = 0; i < eeprom::SLOT_MEM_LEN; i++) {
-      input::eeprom->send_word(i + slot_addr, 0xff);
+
+    at24c32::SequentialWrite * writter = new at24c32::SequentialWrite(input::eeprom);
+    writter->init(slot_addr);
+    for(at24c32::addr_t i = 0; i < eeprom::SLOT_MEM_LEN; i++) {
+      writter->send_next_word(0xff);
     }
+    writter->end();
+    delete writter;
     input::lcd->clear();
     input::lcd->setCursor(6,0);
     input::lcd->print("Done!");

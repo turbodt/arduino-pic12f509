@@ -24,6 +24,7 @@ namespace screen {
     input::buttons->wait_first_press();
   }
 
+  /*
   void eeprom::serial::serial_to_eeprom(uint8_t const & slot_index) {
     at24c32::addr_t slot_addr = eeprom::get_slot_address(slot_index);
     Serial.begin(9600);
@@ -37,16 +38,61 @@ namespace screen {
     input::lcd->clear();
     input::lcd->setCursor(4,0);
     input::lcd->print("Received");
+
+    at24c32::SequentialWrite * writter = new at24c32::SequentialWrite(input::eeprom);
+    writter->init(slot_addr);
     uint8_t buffer[1];
     for(uint16_t i = 0;i < eeprom::SLOT_MEM_LEN && Serial; i++) {
       buffer[0] = Serial.read();
-      input::eeprom->send_word(i + slot_addr, buffer[0]);
+      writter->send_next_word(buffer[0]);
       if (i%0xf == 0) {
         input::lcd->setCursor(2,1);
         input::lcd->print(String(i+1)+ " of " + String(eeprom::SLOT_MEM_LEN));
       }
     }
+    writter->end();
+    delete writter;
     Serial.end();
+    input::lcd->clear();
+    input::lcd->setCursor(6,0);
+    input::lcd->print("Done!");
+    input::buttons->wait_first_press();
+  }
+  */
+
+  void eeprom::serial::serial_to_eeprom(uint8_t const & slot_index) {
+    at24c32::addr_t slot_addr = eeprom::get_slot_address(slot_index);
+
+    serial_comm::SerialPort * serial = new serial_comm::SerialPort();
+
+    input::lcd->clear();
+    input::lcd->setCursor(0,0);
+    input::lcd->print("Ready to receive");
+    input::lcd->setCursor(3,1);
+    input::lcd->print("content...");
+
+    serial->init_reception();
+
+    input::lcd->clear();
+    input::lcd->setCursor(0,0);
+    input::lcd->print("Size "+String(serial->get_reciving_content_size()) + " Bytes");
+
+    at24c32::SequentialWrite * writter = new at24c32::SequentialWrite(input::eeprom);
+    writter->init(slot_addr);
+    while (!serial->is_content_finished()) {
+      if (!(serial->get_received_size() % 0xff)) {
+        input::lcd->setCursor(0,1);
+        input::lcd->print("Received "+String(serial->get_received_size())+" Bytes");
+      }
+      uint8_t word = serial->get_next_word();
+      writter->send_next_word(word);
+    }
+    writter->end();
+    delete writter;
+
+    serial->end_reception();
+    delete serial;
+
     input::lcd->clear();
     input::lcd->setCursor(6,0);
     input::lcd->print("Done!");
@@ -74,9 +120,11 @@ namespace screen {
       switch (selected_option) {
         case 0:
           serial::eeprom_to_serial(slot_index);
+          exit_loop = true;
           break;
         case 1:
           serial::serial_to_eeprom(slot_index);
+          exit_loop = true;
           break;
         case 2:
           exit_loop = true;

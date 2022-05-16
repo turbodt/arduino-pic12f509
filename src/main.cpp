@@ -25,22 +25,10 @@ void application::init() {
 }
 
 void setup() {
-  Serial.begin(9600);
-  Serial.write("---- SETUP ----\n");
-  Serial.flush();
-  Serial.end();
 }
 
 void loop() {
-  Serial.begin(9600);
-  Serial.write("---- START LOOP ----\n");
-  Serial.flush();
-  Serial.end();
   application::init();
   application::run();
   application::end();
-  Serial.begin(9600);
-  Serial.write("---- END ----\n");
-  Serial.flush();
-  Serial.end();
 }
